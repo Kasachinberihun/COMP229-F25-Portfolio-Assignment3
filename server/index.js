@@ -23,6 +23,10 @@ app.use(morgan('dev'));
 app.use('/projects', projectRoutes);
 app.use('/users', userRoutes)
 
+app.use('/api/data', (req, res) => {
+    res.json({ message: 'Hello from the API! Again' });
+});
+
 
 app.listen(3000);   
 
