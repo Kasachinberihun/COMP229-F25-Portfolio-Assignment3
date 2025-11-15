@@ -1,22 +1,30 @@
-import express from 'express';
+
+import express from "express";
 import {
-    getAllProjects,
-    getProjectById,
-    updateProject,
-    deleteProject,
-    createProject
-} from '../controllers/project.js'
+  getAllProjects,
+  getProjectById,
+  createProject,
+  updateProject,
+  deleteProject,
+} from "../controllers/project.js";
 
-import authMiddleware from '../middlewares/auth.js';
+import requireAuth /* , { requireAdmin } */ from "../middlewares/auth.js";
 
-// Router /projects
 const router = express.Router();
 
-// HTTP Verbs for RESTful APIs GET, POST, PUT, DELETE
-router.get('/', authMiddleware, getAllProjects);
-router.get('/:id', authMiddleware, getProjectById);
-router.post('/', authMiddleware, createProject);
-router.put('/:id', authMiddleware, updateProject);
-router.delete('/:id', authMiddleware, deleteProject);
+// ================================
+// Public read routes
+// ================================
+router.get("/", getAllProjects);
+router.get("/:id", getProjectById);
+
+// ================================
+// Authenticated write routes
+// (Relaxed: any logged-in user can create/update/delete)
+// ================================
+router.post("/", requireAuth, createProject);
+router.put("/:id", requireAuth, updateProject);
+router.delete("/:id", requireAuth, deleteProject);
 
 export default router;
+

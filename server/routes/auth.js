@@ -37,6 +37,7 @@ export const requireAuth = (req, res, next) => {
 
 // ==========================================
 // REQUIRE ADMIN ROLE
+// (still available if you want to use it later)
 // ==========================================
 export const requireAdmin = (req, res, next) => {
   if (!req.user) {

@@ -1,86 +1,107 @@
-import './App.css'
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
-import { useState, useEffect } from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
+ 
+ // src/App.jsx
+import { Routes, Route, Navigate, Link } from "react-router-dom";
+import "./App.css";
 
-// Components
-import Home from './components/home.jsx';
-import Register from './components/register.jsx';
-import Login from './components/login.jsx';
+import ProjectList from "./components/project-list";
+import ProjectDetails from "./components/project-details";
+import ProjectCreate from "./components/project-create";
+import ProjectEdit from "./components/project-edit";
+
+import Login from "./components/Login";
+import Signup from "./components/Signup";
+
+import Education from "./pages/Education";
+import Contact from "./pages/Contact";
+import ContactAdmin from "./pages/ContactAdmin"; // 👈 admin messages page
+
+import { useAuth } from "./AuthContext";
 
 function App() {
-
-  const getUserFromStorage = () => {
-    const token = localStorage.getItem("token");
-    const username = localStorage.getItem("username");
-
-    return token && username ? { username } : null;
-  }
-
-  const [user, setUser] = useState(getUserFromStorage());
-
-  useEffect(() => {
-    setUser(getUserFromStorage());
-  }, [])
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("username");
-    setUser(null);
-  }
-
+  const { user, signout } = useAuth();
+  const isAdmin = user?.role === "admin";
 
   return (
-    <>
-      <Router>
-        <div className="App">
-          <nav className="navbar navbar-expand-lg navbar-light bg-light">
-            <Link className='navbar-brand' to="/">My Portfolio</Link>
-            <div className="collapse navbar-collapse">
-              <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-                <li className="nav-item">
-                  <Link className='nav-link' to="/">Home</Link>
-                </li>
-                <li className="nav-item">
-                  <Link className='nav-link' to="/about">About</Link>
-                </li>
-                <li className="nav-item">
-                  <Link className='nav-link' to="/services">Services</Link>
-                </li>
-                <li className="nav-item">
-                  <Link className='nav-link' to="/projects">Projects</Link>
-                </li>
-                <li className="nav-item">
-                  <Link className='nav-link' to="/contact">Contact</Link>
-                </li>
-              </ul>
-              {user ? (
-                <div className="navbar-nav ms-auto d-flex align-items-center">
-                  <span className="navbar-text me-3">Welcome, {user.username}</span>
-                  <button className='btn btn-outline-danger' onClick={handleLogout}>Logout</button>
-                </div>
-              ) : (
-                <ul className="navbar-nav ms-auto">
-                  <li className="nav-item">
-                    <Link className='nav-link' to="/register">Register</Link>
-                  </li>
-                  <li className="nav-item">
-                    <Link className='nav-link' to="/login">Login</Link>
-                  </li>
-                </ul>
-              )}
-            </div>
-          </nav>
+    <div>
+      {/* Navbar */}
+      <nav
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          padding: "10px 16px",
+          borderBottom: "1px solid #ddd",
+          marginBottom: 16,
+        }}
+      >
+        <div style={{ display: "flex", gap: 12 }}>
+          <Link to="/projects">Projects</Link>
+          <Link to="/education">Education</Link>
+          <Link to="/contact">Contact</Link>
+
+          {/* Simple link to messages page so you can take screenshot */}
+          <Link to="/contact/admin" style={{ fontSize: 12 }}>
+            Contact Messages
+          </Link>
         </div>
 
-        <Routes>
-          <Route path='/' element={<Home />} />
-          <Route path="/register" element={<Register setUser={setUser} />} />
-          <Route path="/login" element={<Login setUser={setUser} />} />
-        </Routes>
-      </Router>
-    </>
-  )
+        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          {user ? (
+            <>
+              <span>Hi, {user.name || user.email}</span>
+              <button onClick={signout}>Logout</button>
+            </>
+          ) : (
+            <>
+              <Link to="/login">Login</Link>
+              <Link to="/signup">Sign up</Link>
+            </>
+          )}
+        </div>
+      </nav>
+
+      {/* Routes */}
+      <Routes>
+        {/* default redirect */}
+        <Route path="/" element={<Navigate to="/projects" replace />} />
+
+        {/* projects list */}
+        <Route path="/projects" element={<ProjectList />} />
+
+        {/* create project (admin only – still guarded) */}
+        <Route
+          path="/projects/new"
+          element={
+            isAdmin ? <ProjectCreate /> : <Navigate to="/projects" replace />
+          }
+        />
+
+        {/* project details */}
+        <Route path="/projects/:id" element={<ProjectDetails />} />
+
+        {/* edit project (admin only – still guarded) */}
+        <Route
+          path="/projects/:id/edit"
+          element={
+            isAdmin ? <ProjectEdit /> : <Navigate to="/projects" replace />
+          }
+        />
+
+        {/* other pages */}
+        <Route path="/education" element={<Education />} />
+        <Route path="/contact" element={<Contact />} />
+
+        {/* admin contact messages page – NOT guarded, no token needed */}
+        <Route path="/contact/admin" element={<ContactAdmin />} />
+
+        {/* auth */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+
+        {/* fallback */}
+        <Route path="*" element={<Navigate to="/projects" replace />} />
+      </Routes>
+    </div>
+  );
 }
 
-export default App
+export default App;

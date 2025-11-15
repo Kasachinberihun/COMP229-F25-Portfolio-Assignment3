@@ -1,24 +1,30 @@
-import express from 'express';
+import express from "express";
 import {
-    getAllUsers,
-    getUserById,
-    createUser,
-    updateUser,
-    deleteUser,
-    loginUser
-} from '../controllers/user.js'
+  getAllUsers,
+  getUserById,
+  createUser,
+  updateUser,
+  deleteUser,
+  // loginUser, // ❌ not needed if using /api/auth/signin
+} from "../controllers/user.js";
 
-import authMiddleware from '../middlewares/auth.js';
+import requireAuth, { requireRole } from "../middlewares/auth.js";
 
-// Router /users
 const router = express.Router();
 
-// HTTP Verbs for RESTful APIs GET, POST, PUT, DELETE
-router.get('/', authMiddleware, getAllUsers);
-router.get('/:id', authMiddleware, getUserById);
-router.post('/', createUser);
-router.put('/:id', authMiddleware, updateUser);
-router.delete('/:id', authMiddleware, deleteUser);
-router.post('/login', loginUser)
+// Admin-only list & get one user
+router.get("/", requireAuth, requireRole("admin"), getAllUsers);
+router.get("/:id", requireAuth, requireRole("admin"), getUserById);
+
+// Admin-only create user (optional – you can also just use /api/auth/signup)
+router.post("/", requireAuth, requireRole("admin"), createUser);
+
+// Admin-only update/delete
+router.put("/:id", requireAuth, requireRole("admin"), updateUser);
+router.delete("/:id", requireAuth, requireRole("admin"), deleteUser);
+
+// ❌ Remove legacy login; use /api/auth/signin instead
+// router.post("/login", loginUser);
 
 export default router;
+

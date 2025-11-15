@@ -1,33 +1,76 @@
-import express from 'express';
-import morgan from 'morgan';
+import express from "express";
+import morgan from "morgan";
 import mongoose from "mongoose";
-import dotenv from 'dotenv/config';
+import dotenv from "dotenv";
+import cors from "cors";
+import cookieParser from "cookie-parser";            // ✅ needed for req.cookies
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI);
-const connection = mongoose.connection;
-connection.on('error', console.error.bind(console, "MongoDB connection error: "));
-connection.once('open', () => { console.log('Connected to MongoDB'); });
+dotenv.config();
 
-import projectRoutes from './routes/project.js';
-import userRoutes from './routes/user.js';
+// ✅ Env checks
+const PORT = process.env.PORT || 4000;
+const mongoURI = process.env.MONGO_URI;              // make sure .env uses MONGO_URI
+const corsOrigin = process.env.CORS_ORIGIN || "http://localhost:5173";
+
+if (!mongoURI) {
+  console.error("❌ ERROR: MONGO_URI is missing in your .env file");
+  process.exit(1);
+}
+
+// ✅ Connect to MongoDB
+mongoose
+  .connect(mongoURI)
+  .then(() => console.log("✅ Connected to MongoDB"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
+
+// ✅ Routes & middleware imports
+import authRoutes from "./routes/auth.js";
+import projectRoutes from "./routes/project.js";
+import userRoutes from "./routes/user.js";
+import educationRoutes from "./routes/education.js";
+import contactRoutes from "./routes/contact.js";
+import { requireAuth } from "./middlewares/auth.js";
 
 const app = express();
 
-app.use(express.json()); // Middleware to parse JSON bodies
+// ✅ Global middleware (before routes)
+app.use(
+  cors({
+    origin: corsOrigin,
+    credentials: true, // allow cookies to be sent
+  })
+);
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());                              // ✅ this line is required
+app.use(morgan("dev"));
 
-app.use(morgan('dev'));
+// ✅ Mount routes
+app.use("/api/auth", authRoutes);
+app.use("/api/projects", projectRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/education", educationRoutes);
+app.use("/api/contact", contactRoutes);               // ✅ singular: /api/contact
 
-//Routes
-
-app.use('/api/projects', projectRoutes);
-app.use('/api/users', userRoutes)
-
-app.use('/api/data', (req, res) => {
-    res.json({ message: 'Hello from the API! Again' });
+// ✅ Simple test endpoint
+app.get("/api/data", (_req, res) => {
+  res.json({ message: "Hello from the API! Again" });
 });
 
+// ✅ Protected test endpoint (requires Bearer token or cookie)
+app.get("/api/protected/ping", requireAuth, (req, res) => {
+  res.json({ ok: true, user: req.user });
+});
 
-app.listen(3000);
+// ✅ 404 + error handlers
+app.use((req, res) => res.status(404).json({ message: "Not found" }));
+app.use((err, _req, res, _next) => {
+  console.error("Unhandled error:", err);
+  res.status(500).json({ message: "Server error" });
+});
 
-console.log('Server running at http://localhost:3000/');
+// ✅ Start server
+app.listen(PORT, () => {
+  console.log(`✅ Server running at http://localhost:${PORT}/`);
+});
+
